@@ -14,7 +14,7 @@ RUN chmod 644 /app/auth_service/.env
 COPY AuthService/target/AuthService-1.0-SNAPSHOT.jar /app/auth_service/AuthService-1.0-SNAPSHOT.jar
 
 # Expose the port your app runs on
-EXPOSE 7001
+EXPOSE 6999
 
 # Run the application
 CMD ["java", "-jar", "/app/auth_service/AuthService-1.0-SNAPSHOT.jar"]

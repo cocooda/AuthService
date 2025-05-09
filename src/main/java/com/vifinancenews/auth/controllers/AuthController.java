@@ -6,7 +6,6 @@ import io.javalin.http.Handler;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class AuthController {
     private static final AuthenticationService authService = new AuthenticationService();
@@ -112,7 +111,7 @@ public class AuthController {
         }
 
         try {
-            UUID userId = UUID.fromString((String) sessionData.get("userId")); // safe casting
+            String userId = (String) sessionData.get("userId");
             boolean reactivated = authService.restoreUser(userId);
 
             if (reactivated) {

@@ -80,71 +80,76 @@ public class AuthenticationService {
         IdentifierDAO.resetFailedAttempts(email);
         IdentifierDAO.updateLastLogin(email);
     
-        boolean softDeleted = isAccountSoftDeleted(user.getId());
-        boolean expired = false;
-    
-        if (softDeleted && !isWithinReactivationPeriod(user.getId())) {
-            expired = true;
-        }
-    
-        // Cache user data after login 
+        // Get the account from the account table
         Account account = AccountDAO.getAccountByUserId(user.getId());
-        if (account != null) {
     
-            // Create a Map<String, String> for user data
-            Map<String, String> userData = new HashMap<>();
-            userData.put("userName", account.getUserName());
-    
-            // Handle potential null values for avatarLink and bio
-            userData.put("avatarLink", account.getAvatarLink() != null ? account.getAvatarLink() : "");
-            userData.put("bio", account.getBio() != null ? account.getBio() : "");
-    
-            // Cache the user data with the hashed userId
-            RedisCacheService.cacheUserData(account.getUserId(), userData);
+        // If account is null, check if it's in the deleted_accounts table
+        if (account == null) {
+            account = AccountDAO.getDeletedAccountByUserId(user.getId());
         }
-
+    
+        if (account != null) {
+            String accountId = account.getUserId(); // hashed userId
+    
+            boolean softDeleted = isAccountSoftDeleted(accountId);
+            boolean expired = softDeleted && !isWithinReactivationPeriod(accountId);
+    
+            //Only cache if it's not soft-deleted or has been reactivated
+            if (!softDeleted && !expired) {
+    
+                Map<String, String> userData = new HashMap<>();
+                userData.put("userName", account.getUserName());
+                userData.put("avatarLink", account.getAvatarLink() != null ? account.getAvatarLink() : "");
+                userData.put("bio", account.getBio() != null ? account.getBio() : "");
         
-        
-        return new LoginResult(user.getId().toString(), softDeleted, expired);
+                RedisCacheService.cacheUserData(accountId, userData);
+            }
+    
+            return new LoginResult(accountId, softDeleted, expired);
+        } else {
+            System.err.println("Account not found for identifier ID: " + user.getId());
+            return null;
+        }
     }
     
-    
-
-    // ========== Google Login ==========
+    // ========== Google Login ==========  
     public LoginResult loginWithGoogle(String email) throws SQLException {
-        // Step 1: Retrieve the user identifier by email
         Identifier user = IdentifierDAO.getIdentifierByEmail(email);
         if (user == null || !user.getLoginMethod().equalsIgnoreCase("google")) return null;
-        
-        // Step 2: Reset failed attempts for Google login (as done for local logins)
+    
         IdentifierDAO.resetFailedAttempts(email);
         IdentifierDAO.updateLastLogin(email);
-        
-        // Step 3: Check if the account is soft-deleted and within reactivation period
-        boolean softDeleted = isAccountSoftDeleted(user.getId());
-        boolean expired = false;
-        
-        if (softDeleted && !isWithinReactivationPeriod(user.getId())) {
-            expired = true;
-        }
-        
-        // Step 4: Cache user data after successful Google login
+    
+        // Get the account from the account table
         Account account = AccountDAO.getAccountByUserId(user.getId());
+    
+        // If account is null, check if it's in the deleted_accounts table
+        if (account == null) {
+            account = AccountDAO.getDeletedAccountByUserId(user.getId());
+        }
+    
         if (account != null) {
-            // Create a Map<String, String> for user data
+            String accountId = account.getUserId(); // hashed userId
+    
+            boolean softDeleted = isAccountSoftDeleted(accountId);
+            boolean expired = softDeleted && !isWithinReactivationPeriod(accountId);
+
+            //Only cache if it's not soft-deleted or has been reactivated
+            if (!softDeleted && !expired) {
+    
             Map<String, String> userData = new HashMap<>();
             userData.put("userName", account.getUserName());
-            
-            // Handle potential null values for avatarLink and bio
             userData.put("avatarLink", account.getAvatarLink() != null ? account.getAvatarLink() : "");
             userData.put("bio", account.getBio() != null ? account.getBio() : "");
+    
+            RedisCacheService.cacheUserData(accountId, userData);
+            }
             
-            // Cache the user data with the hashed userId
-            RedisCacheService.cacheUserData(account.getUserId(), userData);
+            return new LoginResult(accountId, softDeleted, expired);
+        } else {
+            System.err.println("Account not found for identifier ID: " + user.getId());
+            return null;
         }
-
-        // Return the login result
-        return new LoginResult(user.getId().toString(), softDeleted, expired);
     }
 
     // ========== Forgot Password ==========
@@ -168,6 +173,10 @@ public class AuthenticationService {
         return IdentifierDAO.updatePassword(email, newHashedPassword);
     }
     
+    // ========== Account Restoration ==========
+    public boolean restoreUser(String accountId) throws SQLException {
+        return isWithinReactivationPeriod(accountId) && AccountDAO.restoreUserById(accountId);
+    }
     // ========== Internal Utilities ==========
     private boolean isAccountLocked(Identifier user) {
         if (user.isLocked()) {
@@ -213,22 +222,19 @@ public class AuthenticationService {
         return IdentifierDAO.getIdentifierByEmail(email);
     }
 
-    public boolean isAccountSoftDeleted(UUID userId) throws SQLException {
-        return AccountDAO.isAccountInDeleted(userId);
+    public boolean isAccountSoftDeleted(String accountId) throws SQLException {
+        return AccountDAO.isAccountInDeleted(accountId);
     }
-
-    public boolean isWithinReactivationPeriod(UUID userId) throws SQLException {
-        Optional<LocalDateTime> deletedAt = AccountDAO.getDeletedAccountDeletedAt(userId);
+    
+    public boolean isWithinReactivationPeriod(String accountId) throws SQLException {
+        Optional<LocalDateTime> deletedAt = AccountDAO.getDeletedAccountDeletedAt(accountId);
         if (deletedAt.isPresent()) {
             LocalDateTime reactivationDeadline = deletedAt.get().plusDays(30);
             return LocalDateTime.now().isBefore(reactivationDeadline);
         }
         return false;
     }
-
-    public boolean restoreUser(UUID userId) throws SQLException {
-        return isWithinReactivationPeriod(userId) && AccountDAO.restoreUserById(userId);
-    }
+    
 
     
 }
