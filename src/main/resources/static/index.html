@@ -26,11 +26,18 @@
         </nav>
     </header>
 
-    <section id="search-link">
-        <h2>Search News</h2>
-        <a href="http://localhost:5001/static/search.html">Go to Search</a>  <!-- Link to search.html in SearchService -->
-    </section>
+    <main>
+        <section id="search-section">
+            <h2>Search News</h2>
+            <input type="text" id="queryInput" placeholder="Enter search query">
+            <button onclick="submitSearch()">Search</button>
+
+            <div id="results"></div>
+        </section>
+    </main>
 
     <script src="/js/auth.js" defer></script>
+    <script src="/js/search.js" defer></script>
+
 </body>
 </html>
