@@ -34,13 +34,23 @@ public class Main {
 
 
         app.before(ctx -> {
-            // CORS Settings
-            ctx.header("Access-Control-Allow-Origin", "*"); // Allow all origins
+            // Get the Origin header from the request
+            String origin = ctx.header("Origin");
+            // Allow only your frontend origin
+            if (origin != null && origin.equals("http://localhost:5173")) {
+                ctx.header("Access-Control-Allow-Origin", origin);
+                ctx.header("Vary", "Origin");
+            }
+            // Allow credentials
+            ctx.header("Access-Control-Allow-Credentials", "true");
             ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie"); // Include 'Cookie' in allowed headers
+            ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
+            ctx.cookie("session_timeout", String.valueOf(System.currentTimeMillis()), 600);
+        });
 
-            // Session settings: Add cookie for session expiration
-            ctx.cookie("session_timeout", String.valueOf(System.currentTimeMillis()), 600); // Session timeout in seconds
+        // Handle preflight OPTIONS requests
+        app.options("/*", ctx -> {
+            ctx.status(204);
         });
         
         // **Auth Routes**

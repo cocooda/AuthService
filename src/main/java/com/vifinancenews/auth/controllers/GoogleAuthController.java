@@ -75,8 +75,14 @@ public class GoogleAuthController {
             String sessionId = RedisSessionManager.createSession(sessionData);
     
             // Step 6: Set the session cookie in the response
-            ctx.cookie("SESSION_ID", sessionId, 3600); // 1 hour
-    
+            // ctx.cookie("SESSION_ID", sessionId, 3600); // 1 hour
+            // ctx.cookie("SESSION_ID", sessionId, 3600, "/", "localhost", false, true, "Lax"); //fix
+            String cookieValue = String.format(
+                "SESSION_ID=%s; Max-Age=3600; Path=/; Domain=localhost; HttpOnly; SameSite=Lax",
+                sessionId
+            );
+            ctx.header("Set-Cookie", cookieValue);
+            // Arguments: name, value, maxAge, path, domain, secure, httpOnly, sameSite
             // Step 7: Respond with success message and user ID
             System.out.println("Successful login");
             ctx.status(200).json(Map.of("message", "Google login successful", "userId", loginResult.userId()));
