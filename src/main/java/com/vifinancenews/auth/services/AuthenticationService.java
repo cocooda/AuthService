@@ -4,8 +4,8 @@ import com.vifinancenews.common.daos.AccountDAO;
 import com.vifinancenews.common.daos.IdentifierDAO;
 import com.vifinancenews.common.models.Account;
 import com.vifinancenews.common.models.Identifier;
-import com.vifinancenews.common.utilities.EmailUtility;
 
+import com.vifinancenews.common.utilities.EmailUtility;
 import com.vifinancenews.common.utilities.OTPGenerator;
 import com.vifinancenews.common.utilities.PasswordHash;
 import com.vifinancenews.common.utilities.RedisCacheService;
