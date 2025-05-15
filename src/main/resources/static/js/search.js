@@ -6,6 +6,7 @@ async function submitSearch() {
   const response = await fetch(`${API_BASE}/get_cached_result`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ query })
   });
 
@@ -35,6 +36,7 @@ async function saveArticle(url) {
   await fetch(`${API_BASE}/save`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ url })
   });
   alert("Article saved!");
@@ -44,6 +46,7 @@ async function voteArticle(url, vote_type) {
   await fetch(`${API_BASE}/vote`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ url, vote_type })
   });
   alert(vote_type === 1 ? "Upvoted!" : "Downvoted!");
