@@ -27,16 +27,29 @@ public class Main {
             // Request Settings
             config.http.asyncTimeout = 30000; // 30 sec timeout
             config.http.maxRequestSize = 10_000_000L; // 10MB max request size
-        }).start(6999);
+        }).start("0.0.0.0", 6999);
+
+
+        // Handle preflight OPTIONS requests
+        app.options("/*", ctx -> {
+            String origin = ctx.header("Origin");
+            if (origin != null) {
+                ctx.header("Access-Control-Allow-Origin", origin);
+                ctx.header("Vary", "Origin");
+            }
+            ctx.header("Access-Control-Allow-Credentials", "true");
+            ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
+            ctx.status(204);
+        });
 
         app.before(ctx -> {
-            // CORS Settings
-            ctx.header("Access-Control-Allow-Origin", "*"); // Allow all origins
-            ctx.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            ctx.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie"); // Include 'Cookie' in allowed headers
-
-            // Session settings: Add cookie for session expiration
-            ctx.cookie("session_timeout", String.valueOf(System.currentTimeMillis()), 600); // Session timeout in seconds
+            String origin = ctx.header("Origin");
+            if (origin != null) {
+                ctx.header("Access-Control-Allow-Origin", origin);
+                ctx.header("Vary", "Origin");
+            }
+            ctx.header("Access-Control-Allow-Credentials", "true");
         });
 
         // **Auth Routes**
